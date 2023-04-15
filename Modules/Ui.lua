@@ -92,6 +92,7 @@ function Ui:Init()
 	Fire.TextScaled = true
 	Fire.TextSize = 14
 	Fire.TextWrapped = true
+	Fire.AutomaticSize = Enum.AutomaticSize.X
 
 	UICorner_4.Parent = Fire
 
@@ -115,6 +116,7 @@ function Ui:Init()
 	FocusShip_1.TextScaled = true
 	FocusShip_1.TextSize = 14
 	FocusShip_1.TextWrapped = true
+	FocusShip_1.AutomaticSize = Enum.AutomaticSize.X
 
 	UICorner_5.Parent = FocusShip_1
 
