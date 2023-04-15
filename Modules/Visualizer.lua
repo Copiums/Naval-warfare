@@ -53,7 +53,7 @@ function Visualizer:CreateCircle(Radius)
 
 	local Attach2 = Instance.new("Attachment")
 	Attach2.Name = "2"
-	Attach1.CFrame = CFrame.new(0, 0, -Radius)
+	Attach2.CFrame = CFrame.new(0, 0, -Radius)
 	Attach2.Parent = BeamParent
 
 	local Beam1 = self.Defaults.Beam:Clone()
