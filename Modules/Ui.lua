@@ -11,7 +11,7 @@ function Ui:Init()
 	local UIPadding = Instance.new("UIPadding")
 	local Map = Instance.new("ViewportFrame")
 	local UICorner_2 = Instance.new("UICorner")
-	local CurrentPosition = Instance.new("ImageButton")
+	local CurrentPosition = Instance.new("ImageLabel")
 	local UIAspectRatioConstraint = Instance.new("UIAspectRatioConstraint")
 	local Buttons = Instance.new("Frame")
 	local UICorner_3 = Instance.new("UICorner")
@@ -125,6 +125,7 @@ function Ui:Init()
 	Ui.Buttons.Fire = Fire
 	Ui.Buttons.Focus = FocusShip_1
 	Ui.Viewport = Map
+	Ui.Cursor = CurrentPosition
 end
 
 return Ui

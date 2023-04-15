@@ -27,6 +27,9 @@ local Ship = GetModule("Ship")
 local Network = GetModule("Network")
 Network:Init()
 
+local Ui = GetModule("Ui")
+Ui:Init()
+
 local Event = ReplicatedStorage.Event
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
