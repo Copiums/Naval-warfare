@@ -33,7 +33,7 @@ function Ui:Init()
 	Frame.BackgroundColor3 = Color3.new(0.227451, 0.227451, 0.227451)
 	Frame.BorderSizePixel = 0
 	Frame.Position = UDim2.new(0.583049297, 0, 0.343499213, 0)
-	Frame.Size = UDim2.new(0.416821033, 0, 0.656427979, 0)
+	Frame.Size = UDim2.new(0.3, 0, 0.515, 0)
 
 	UICorner.Parent = Frame
 

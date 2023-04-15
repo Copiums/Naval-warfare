@@ -154,6 +154,14 @@ EventManager:AddEvent(Player.Chatted, function(message, recipient)
 		end
 	elseif message == "/e stop" then
 		Notification:SendNotification("Success", "Stopping the script", 5)
+		for i,Module in pairs({EventManager, Visualizer, Network, Ui}) do
+			local succes, response = pcall(function()
+				return Module:Destroy()
+			end)
+			if not succes then
+				Notification:SendNotification("Error", response.." when trying to unload", 5)
+			end
+		end
 		EventManager:Destroy()
 		Visualizer:Destroy()
 		Network:Destroy()
