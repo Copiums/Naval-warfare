@@ -2,12 +2,12 @@ local HttpService = game:GetService("HttpService")
 
 local Visualizer = {
 	Instances = {},
-	Parent = function()
+	Parent = (function()
 		local Parent = Instance.new("Folder")
 		Parent.Name = HttpService:GenerateGUID()
 		Parent.Parent = workspace
 		return Parent
-	end,
+	end)(),
 	Defaults = {
 		Beam = (function()
 			local Beam = Instance.new("Beam")

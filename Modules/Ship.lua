@@ -1,5 +1,7 @@
 local Ship = {
-    Status = {}
+    Status = {
+        CurrentGun = -5
+    }
 }
 
 local ShipNames = {
@@ -20,6 +22,7 @@ function Ship:UpdateShip(SeatPart : BasePart)
 end
 
 function Ship:GetGunBarrel(gunIndex : number)
+    gunIndex = 2 - gunIndex
     for i,Gun in pairs(self.Ship:GetChildren()) do
         if Gun.Name ~= "Turret" then
             continue

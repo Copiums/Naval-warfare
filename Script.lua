@@ -5,6 +5,8 @@ local Stats = game:GetService("Stats")
 local Notification =
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
 
+Notification:SendNotification("Info", "Executed", 3)
+
 local function GetModule(Name: string)
 	local repositary = "https://raw.githubusercontent.com/BFGKO/Naval-warfare/main/Modules/%s.lua"
 	local url = repositary:format(Name)
@@ -37,16 +39,17 @@ local function GetIsland(Letter)
 	end
 end
 
-local function Shoot(Target: Vector3)
-	Event:FireServer("ChangeGun", { 0 })
-	local Character = Player.Character
-	local Root = Character.HumanoidRootPart
-	local distance = (Root.Position - Target).Magnitude
+local function Shoot(target: Vector3)
+	if Ship.Ship.GunNum.Value ~= 0 then
+		Event:FireServer("ChangeGun", { 0 })
+	end
+	local barrel = Ship:GetGunBarrel(0)
+	local distance = (barrel.Position - target).Magnitude
 
 	local angle = Calculations.Artillery:angle(distance, 800)
 	local highestPoint = Calculations.Artillery:highestPoint(angle, 800)
 
-	local middlePoint = (Root.Position + Target) / 2 + Vector3.yAxis * highestPoint
+	local middlePoint = (barrel.Position + target) / 2 + Vector3.yAxis * highestPoint
 
 	Event:FireServer("aim", {
 		middlePoint,
@@ -54,24 +57,6 @@ local function Shoot(Target: Vector3)
 
 	Event:FireServer("bomb", { true })
 	Event:FireServer("bomb", { false })
-end
-
-
-for _, Beam in pairs({
-	Visualizer:CreateCircle(1700),
-	Visualizer:CreateCircle(1500),
-}) do
-	EventManager:AddEvent(RunService.RenderStepped:Connect(function()
-		local Character = Player.Character
-		if not Character then
-			return
-		end
-		local Root = Character:FindFirstChild("HumanoidRootPart")
-		if not Root then
-			return
-		end
-		Beam.Position = Root.Position
-	end))
 end
 
 EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
@@ -113,7 +98,7 @@ EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 			ShootAt,
 		})
 
-		if Info.CurrentGun ~= 1 then
+		if Ship.Status.CurrentGun ~= 1 then
 			Event:FireServer("ChangeGun", { 1 })
 		end
 
@@ -157,7 +142,7 @@ EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 end)
 
 EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
-	Info.Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+	getgenv().Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
 end)
 
 EventManager:AddEvent(Player.Chatted, function(message, recipient)
@@ -191,3 +176,20 @@ EventManager:AddEvent(Player.CharacterAdded, function(Character)
 		Ship:UpdateShip(SeatPart)
 	end)
 end)
+
+for _, Beam in pairs({
+	Visualizer:CreateCircle(1700),
+	Visualizer:CreateCircle(1500),
+}) do
+	EventManager:AddEvent(RunService.RenderStepped:Connect(function()
+		local Character = Player.Character
+		if not Character then
+			return
+		end
+		local Root = Character:FindFirstChild("HumanoidRootPart")
+		if not Root then
+			return
+		end
+		Beam.Position = Root.Position
+	end))
+end
