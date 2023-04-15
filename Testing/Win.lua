@@ -4,7 +4,7 @@ local Teams = game:GetService("Teams")
 local Workspace = game:GetService("Workspace")
 
 local aux = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Upbolt/Hydroxide/revision/ohaux.lua"))()
-local Notification = loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
+local Notiwfication = loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
 
 local Event = ReplicatedStorage:WaitForChild("Event")
 
@@ -34,8 +34,6 @@ local function GetPlane(): Model
 	local Plane = Seat.Parent
 	return Plane
 end
-
-
 
 local function Refuel()
 	local Plane = GetPlane()

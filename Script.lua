@@ -9,11 +9,19 @@ local Notification =
 local function GetModule(Name : string)
 	local repositary = "https://raw.githubusercontent.com/BFGKO/Naval-warfare/main/Modules/%s.lua"
 	local url = repositary:format(Name)
-	Notification:SendNotification("Success", "loading "..Name..".lua", 3)
-	return loadstring(game:HttpGet(repositary:format(Name)))
+	success, err = pcall(function()
+		
+		return loadstring(game:HttpGet(url))
+	end)
+	if not success then
+		Notification:SendNotification("Error", ("%s when trying to load %s"):format(err, Name), 4)
+	else
+		return success
+	end
 end
 
 local Calculations = GetModule("Calculations")
+local EventManager = GetModule("EventManager")
 
 
 local Event = ReplicatedStorage.Event
@@ -143,8 +151,7 @@ Events["AntiAirShooter"] = RunService.RenderStepped:Connect(function(deltaTime)
 
 		local Plane = ClosestPlane.Plane
 
-		local PlaneRoot = Plane.MainBody
-		local ShootAt = PlaneRoot.Position + (PlaneRoot.Velocity * TravelTime)
+		local ShootAt = Calculations.AntiAir:shootAt(Root, Plane.MainBody)
 
 		Event:FireServer("aim", {
 			ShootAt,
