@@ -8,7 +8,7 @@ local Notification =
 local function GetModule(Name: string)
 	local repositary = "https://raw.githubusercontent.com/BFGKO/Naval-warfare/main/Modules/%s.lua"
 	local url = repositary:format(Name)
-	success, response = pcall(function()
+	local success, response = pcall(function()
 		return loadstring(game:HttpGet(url))()
 	end)
 	if not success then
