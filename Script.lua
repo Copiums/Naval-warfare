@@ -2,27 +2,24 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 
-
 local Notification =
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
 
-local function GetModule(Name : string)
+local function GetModule(Name: string)
 	local repositary = "https://raw.githubusercontent.com/BFGKO/Naval-warfare/main/Modules/%s.lua"
 	local url = repositary:format(Name)
-	success, err = pcall(function()
-		
-		return loadstring(game:HttpGet(url))
+	success, response = pcall(function()
+		return loadstring(game:HttpGet(url))()
 	end)
 	if not success then
-		Notification:SendNotification("Error", ("%s when trying to load %s"):format(err, Name), 4)
+		Notification:SendNotification("Error", ("%s when trying to load %s"):format(response, Name), 4)
 	else
-		return success
+		return response
 	end
 end
 
 local Calculations = GetModule("Calculations")
 local EventManager = GetModule("EventManager")
-
 
 local Event = ReplicatedStorage.Event
 
@@ -34,11 +31,9 @@ local Info = {}
 local Planes = {}
 local Events = {}
 
+Beams = {}
 
-
-
-local function InitBeams(Radius)
-	local Radius = 1700
+local function InitBeam(Radius)
 	local BeamParent = Instance.new("Part")
 	BeamParent.CanCollide = false
 	BeamParent.Anchored = true
@@ -77,7 +72,7 @@ local function InitBeams(Radius)
 
 	Beam2.Parent = BeamParent
 
-	Events["Beam("..Radius..") updator"] = RunService.RenderStepped:Connect(function(deltaTime)
+	EventManager:AddEvent(RunService.RenderStepped,function(deltaTime)
 		if Player.Character then
 			local Root = Player.Character.HumanoidRootPart
 			BeamParent.CFrame = Root.CFrame
@@ -85,10 +80,12 @@ local function InitBeams(Radius)
 			Attach2.WorldCFrame = CFrame.new(Root.CFrame.Position + Vector3.new(0, 0, -Radius), Root.Position)
 		end
 	end)
+	Beams[#Beams+1] = BeamParent
 end
 
-InitBeams(1700)
-InitBeams(1500)
+
+InitBeam(1700)
+InitBeam(1500)
 
 local function GetIsland(Letter)
 	for i, Island in pairs(workspace:GetChildren()) do
@@ -117,9 +114,7 @@ local function Shoot(Target: Vector3)
 	Event:FireServer("bomb", { false })
 end
 
-
-
-Events["RunServiceShipUpdater"] = RunService.RenderStepped:Connect(function(deltaTime)
+EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 	if Player.Character then
 		local Humanoid = Player.Character:WaitForChild("Humanoid")
 		if Humanoid and Humanoid.SeatPart then
@@ -127,7 +122,8 @@ Events["RunServiceShipUpdater"] = RunService.RenderStepped:Connect(function(delt
 		end
 	end
 end)
-Events["AntiAirShooter"] = RunService.RenderStepped:Connect(function(deltaTime)
+
+EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 	if Ship and Player.Character then
 		local Character = Player.Character
 		local Root = Character.HumanoidRootPart
@@ -166,7 +162,7 @@ Events["AntiAirShooter"] = RunService.RenderStepped:Connect(function(deltaTime)
 	end
 end)
 
-Events["AntiAir"] = RunService.RenderStepped:Connect(function(deltaTime)
+EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 	local Character = Player.Character
 	if not Character or not Ship then
 		return
@@ -200,7 +196,7 @@ Events["AntiAir"] = RunService.RenderStepped:Connect(function(deltaTime)
 	end
 end)
 
-Events["PingUpdated"] = RunService.RenderStepped:Connect(function(deltaTime)
+EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 	Info.Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
 end)
 
@@ -225,7 +221,7 @@ gmt.__namecall = function(self, ...)
 	return namecall(self, ...)
 end
 
-Events["Chatted"] = game.Players.LocalPlayer.Chatted:Connect(function(message, recipient)
+EventManager:AddEvent(Player.Chatted, function(message, recipient)
 	if message == "/e b" then
 		Shoot(GetIsland("B").MainBody.Position)
 	elseif message == "/e a" then
@@ -240,11 +236,10 @@ Events["Chatted"] = game.Players.LocalPlayer.Chatted:Connect(function(message, r
 		end
 	elseif message == "/e stop" then
 		Notification:SendNotification("Success", "Stopping the script", 5)
-		for i, event in pairs(Events) do
-			print("Disconnected", i)
-			event:Disconnect()
+		EventManager:Stop()
+		for i, beam in pairs(Beams) do
+			beam:Destroy()
 		end
-		BeamParent:Destroy()
 
 		gmt.__namecall = namecall
 	end

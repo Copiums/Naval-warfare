@@ -1,4 +1,5 @@
-local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+
 
 local manager = {
     functions = {},
@@ -12,7 +13,7 @@ function manager:Stop()
 end
 
 function manager:AddEvent(event, callback)
-    manager.events[RunService:GenerateGUID()] = event:Connect(callback)
+    self.events[HttpService:GenerateGUID()] = event:Connect(callback)
 end
 
 return manager
