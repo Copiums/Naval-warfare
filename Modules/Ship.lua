@@ -16,7 +16,7 @@ function Ship:UpdateShip(SeatPart : BasePart)
         self.Ship = nil
     end
     local Parent = SeatPart.Parent
-    if table.find(ShipNames, Parent.name) then
+    if table.find(ShipNames, Parent.Name) then
         self.Ship = Parent
     end
 end
@@ -40,5 +40,6 @@ end
 function Ship:CurrentGun()
     return Ship.Ship.GunNum.Value
 end
+
 
 return Ship

@@ -60,7 +60,7 @@ local function Shoot(target: Vector3)
 end
 
 EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
-	if Ship.Ship and Player.Character then
+	if Ship.Ship then
 		local Character = Player.Character
 		local Root = Character.HumanoidRootPart
 		local ClosestPlane = {
@@ -78,23 +78,26 @@ EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 		end
 
 		if not ClosestPlane.Plane then
+			if Network.Info.shooting then
+				Network:Send("bomb", false)
+			end
 			return
 		end
 
 		local Plane = ClosestPlane.Plane
 
-		local ShootAt = Calculations.AntiAir:shootAt(Root, Plane.MainBody)
+		local shootAt = Calculations.AntiAir:shootAt(Root, Plane.MainBody)
 
-		Event:FireServer("aim", {
-			ShootAt,
-		})
+		Network:Send("aim", shootAt)
 
 		if Ship.Status.CurrentGun ~= 1 then
-			Event:FireServer("ChangeGun", { 1 })
+			Network:Send("ChangeGun", 1)
 		end
-
-		Event:FireServer("bomb", { true })
-		Event:FireServer("bomb", { false })
+		if Network.Info.shooting then
+			return
+		else
+			Network:Send("bomb", true)
+		end
 	end
 end)
 
@@ -150,7 +153,7 @@ EventManager:AddEvent(Player.Chatted, function(message, recipient)
 			Shoot(workspace.USDock.MainBody.Position)
 		end
 	elseif message == "/e stop" then
-		Notification:SendNotification("Stopped", "Stopping the script", 5)
+		Notification:SendNotification("Success", "Stopping the script", 5)
 		EventManager:Destroy()
 		Visualizer:Destroy()
 		Network:Destroy()
@@ -166,7 +169,7 @@ end)
 
 for _, Beam in pairs({
 	Visualizer:CreateCircle(1700),
-	Visualizer:CreateCircle(1500),
+	-- Visualizer:CreateCircle(1500),
 }) do
 	EventManager:AddEvent(RunService.RenderStepped, function()
 		local Character = Player.Character
@@ -180,3 +183,9 @@ for _, Beam in pairs({
 		Beam.Position = Root.Position
 	end)
 end
+
+local Character = Player.Character
+local Humanoid = Character:WaitForChild("Humanoid")
+Humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function(SeatPart)
+	Ship:UpdateShip(SeatPart)
+end)
