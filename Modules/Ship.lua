@@ -10,6 +10,9 @@ local ShipNames = {
 }
 
 function Ship:UpdateShip(SeatPart : BasePart)
+    if not SeatPart then
+        self.Ship = nil
+    end
     local Parent = SeatPart.Parent
     if table.find(ShipNames, Parent.name) then
         self.Ship = Parent

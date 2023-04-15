@@ -188,9 +188,6 @@ end)
 EventManager:AddEvent(Player.CharacterAdded, function(Character)
 	local Humanoid = Character:WaitForChild("Humanoid")
 	Humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function(SeatPart)
-		if not SeatPart then
-			return
-		end
 		Ship:UpdateShip(SeatPart)
 	end)
 end)
