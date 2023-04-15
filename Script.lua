@@ -20,72 +20,14 @@ end
 
 local Calculations = GetModule("Calculations")
 local EventManager = GetModule("EventManager")
+local Visualizer = GetModule("Visualizer")
+local Ship = GetModule("Ship")
 
 local Event = ReplicatedStorage.Event
-
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
-local Ship
-local Info = {}
 local Planes = {}
-local Events = {}
-
-Beams = {}
-
-local function InitBeam(Radius)
-	local BeamParent = Instance.new("Part")
-	BeamParent.CanCollide = false
-	BeamParent.Anchored = true
-	BeamParent.Position = Vector3.new(0, math.huge, 0)
-	BeamParent.Transparency = 1
-
-	BeamParent.Parent = workspace
-
-	local Attach1 = Instance.new("Attachment")
-	Attach1.Parent = BeamParent
-
-	local Attach2 = Instance.new("Attachment")
-	Attach2.Parent = BeamParent
-
-	local Beam1 = Instance.new("Beam")
-	Beam1.Attachment0 = Attach2
-	Beam1.Attachment1 = Attach1
-	Beam1.CurveSize0 = Radius * 4 / 3
-	Beam1.CurveSize1 = Radius * 4 / 3
-
-	Beam1.Width0 = 15
-	Beam1.Width1 = 15
-	Beam1.Segments = 100
-
-	Beam1.Parent = BeamParent
-
-	local Beam2 = Instance.new("Beam")
-	Beam2.Attachment0 = Attach2
-	Beam2.Attachment1 = Attach1
-	Beam2.CurveSize0 = -Radius * 4 / 3
-	Beam2.CurveSize1 = -Radius * 4 / 3
-
-	Beam2.Width0 = 15
-	Beam2.Width1 = 15
-	Beam2.Segments = 100
-
-	Beam2.Parent = BeamParent
-
-	EventManager:AddEvent(RunService.RenderStepped,function(deltaTime)
-		if Player.Character then
-			local Root = Player.Character.HumanoidRootPart
-			BeamParent.CFrame = Root.CFrame
-			Attach1.WorldCFrame = CFrame.new(Root.CFrame.Position + Vector3.new(0, 0, Radius), Root.Position)
-			Attach2.WorldCFrame = CFrame.new(Root.CFrame.Position + Vector3.new(0, 0, -Radius), Root.Position)
-		end
-	end)
-	Beams[#Beams+1] = BeamParent
-end
-
-
-InitBeam(1700)
-InitBeam(1500)
 
 local function GetIsland(Letter)
 	for i, Island in pairs(workspace:GetChildren()) do
@@ -112,6 +54,24 @@ local function Shoot(Target: Vector3)
 
 	Event:FireServer("bomb", { true })
 	Event:FireServer("bomb", { false })
+end
+
+
+for _, Beam in pairs({
+	Visualizer:CreateCircle(1700),
+	Visualizer:CreateCircle(1500),
+}) do
+	EventManager:AddEvent(RunService.RenderStepped:Connect(function()
+		local Character = Player.Character
+		if not Character then
+			return
+		end
+		local Root = Character:FindFirstChild("HumanoidRootPart")
+		if not Root then
+			return
+		end
+		Beam.Position = Root.Position
+	end))
 end
 
 EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
@@ -200,27 +160,6 @@ EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 	Info.Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
 end)
 
-local gmt = getrawmetatable(game)
-setreadonly(gmt, false)
-
-local namecall = gmt.__namecall
-
-gmt.__namecall = function(self, ...)
-	local method = getnamecallmethod()
-	if self == Event and method == "FireServer" then
-		local args = { ... }
-		local eventType = args[1]
-		local eventArgs = args[2]
-
-		if eventType == "ChangeGun" then
-			Info.CurrentGun = eventArgs[1]
-		elseif eventType == "bomb" and eventArgs then
-			Info.Shooting = eventArgs[1]
-		end
-	end
-	return namecall(self, ...)
-end
-
 EventManager:AddEvent(Player.Chatted, function(message, recipient)
 	if message == "/e b" then
 		Shoot(GetIsland("B").MainBody.Position)
@@ -237,10 +176,21 @@ EventManager:AddEvent(Player.Chatted, function(message, recipient)
 	elseif message == "/e stop" then
 		Notification:SendNotification("Success", "Stopping the script", 5)
 		EventManager:Stop()
+		Visualizer:Destroy()
 		for i, beam in pairs(Beams) do
 			beam:Destroy()
 		end
 
 		gmt.__namecall = namecall
 	end
+end)
+
+EventManager:AddEvent(Player.CharacterAdded, function(Character)
+	local Humanoid = Character:WaitForChild("Humanoid")
+	Humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function(SeatPart)
+		if not SeatPart then
+			return
+		end
+		Ship:UpdateShip(SeatPart)
+	end)
 end)

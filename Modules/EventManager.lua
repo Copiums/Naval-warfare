@@ -6,7 +6,7 @@ local manager = {
     events = {}
 }
 
-function manager:Stop()
+function manager:Destroy()
     for i,event in pairs(self.events) do
         event:Disconnect()
     end
