@@ -24,7 +24,8 @@ local Calculations = GetModule("Calculations")
 local EventManager = GetModule("EventManager")
 local Visualizer = GetModule("Visualizer")
 local Ship = GetModule("Ship")
--- local Network = GetModule("Network")
+local Network = GetModule("Network")
+Network:Init()
 
 local Event = ReplicatedStorage.Event
 local Players = game:GetService("Players")
@@ -52,12 +53,10 @@ local function Shoot(target: Vector3)
 
 	local middlePoint = (barrel.Position + target) / 2 + Vector3.yAxis * highestPoint
 
-	Event:FireServer("aim", {
-		middlePoint,
-	})
+	Network:Send("aim", middlePoint)
 
-	Event:FireServer("bomb", { true })
-	Event:FireServer("bomb", { false })
+	Network:Send("bomb", true)
+	Network:Send("bomb", false)
 end
 
 EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
@@ -151,9 +150,10 @@ EventManager:AddEvent(Player.Chatted, function(message, recipient)
 			Shoot(workspace.USDock.MainBody.Position)
 		end
 	elseif message == "/e stop" then
-		Notification:SendNotification("Success", "Stopping the script", 5)
+		Notification:SendNotification("Stopped", "Stopping the script", 5)
 		EventManager:Destroy()
 		Visualizer:Destroy()
+		Network:Destroy()
 	end
 end)
 

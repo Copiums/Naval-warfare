@@ -60,14 +60,14 @@ function Visualizer:CreateCircle(Radius)
 	Beam1.Attachment0 = Attach2
 	Beam1.Attachment1 = Attach1
 	Beam1.CurveSize0 *= Radius
-	Beam1.CurveSize1 *= Radius
+	Beam1.CurveSize1 *= -Radius
 	Beam1.Parent = BeamParent
 
 	local Beam2 = self.Defaults.Beam:Clone()
 	Beam2.Attachment0 = Attach2
 	Beam2.Attachment1 = Attach1
 	Beam2.CurveSize0 *= -Radius
-	Beam2.CurveSize1 *= -Radius
+	Beam2.CurveSize1 *= Radius
 	Beam2.Parent = BeamParent
 
 	self.Instances[HttpService:GenerateGUID()] = BeamParent
