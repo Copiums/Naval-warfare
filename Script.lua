@@ -2,6 +2,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Stats = game:GetService("Stats")
 
+
+local Notification =
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
+
+local function GetModule(Name : string)
+	local repositary = "https://raw.githubusercontent.com/BFGKO/Naval-warfare/main/Modules/%s.lua"
+	local url = repositary:format(Name)
+	Notification:SendNotification("Success", "loading "..Name..".lua", 3)
+	return loadstring(game:HttpGet(repositary:format(Name)))
+end
+
+local Calculations = GetModule("Calculations")
+
+
 local Event = ReplicatedStorage.Event
 
 local Players = game:GetService("Players")
@@ -11,6 +25,8 @@ local Ship
 local Info = {}
 local Planes = {}
 local Events = {}
+
+
 
 
 local function InitBeams(Radius)
@@ -78,33 +94,13 @@ local function Shoot(Target: Vector3)
 	Event:FireServer("ChangeGun", { 0 })
 	local Character = Player.Character
 	local Root = Character.HumanoidRootPart
+	local distance = (Root.Position - Target).Magnitude
 
-	local Velocity = 800
-	local g = 58.5984
-
-	local distance = (Root.Position - Target) * Vector3.new(1, 0, 1)
-
-	distance = distance.Magnitude
-	if distance > 1700 then
-		return
-	end
-
-	local x = distance / (Velocity * Velocity) * g
-
-	local angle = math.asin(x) / 2
-
-	local highestPoint = (Velocity ^ 2 * math.sin(angle) ^ 2) / (2 * g)
-
-	if highestPoint ~= highestPoint then
-		return
-	end
-
-	print("-------------")
-	print("distance =", distance)
-	print("angle =", angle * 180 / math.pi)
-	print("highest point =", highestPoint)
+	local angle = Calculations.Artillery:angle(distance, 800)
+	local highestPoint = Calculations.Artillery:highestPoint(angle, 800)
 
 	local middlePoint = (Root.Position + Target) / 2 + Vector3.yAxis * highestPoint
+
 	Event:FireServer("aim", {
 		middlePoint,
 	})
@@ -113,8 +109,6 @@ local function Shoot(Target: Vector3)
 	Event:FireServer("bomb", { false })
 end
 
-local Notification =
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
 
 
 Events["RunServiceShipUpdater"] = RunService.RenderStepped:Connect(function(deltaTime)
@@ -150,9 +144,6 @@ Events["AntiAirShooter"] = RunService.RenderStepped:Connect(function(deltaTime)
 		local Plane = ClosestPlane.Plane
 
 		local PlaneRoot = Plane.MainBody
-		local TraveledPosition = PlaneRoot.Position + PlaneRoot.Velocity
-		local TravelAwaySpeed = (TraveledPosition - Root.Position).Magnitude - ClosestPlane.Distance
-		local TravelTime = (ClosestPlane.Distance / (800 - TravelAwaySpeed)) + Info.Ping
 		local ShootAt = PlaneRoot.Position + (PlaneRoot.Velocity * TravelTime)
 
 		Event:FireServer("aim", {
@@ -165,9 +156,6 @@ Events["AntiAirShooter"] = RunService.RenderStepped:Connect(function(deltaTime)
 
 		Event:FireServer("bomb", { true })
 		Event:FireServer("bomb", { false })
-
-		-- if not Info.Shooting then
-		-- end
 	end
 end)
 
