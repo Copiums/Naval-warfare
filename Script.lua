@@ -189,3 +189,5 @@ local Humanoid = Character:WaitForChild("Humanoid")
 Humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function(SeatPart)
 	Ship:UpdateShip(SeatPart)
 end)
+
+Ship:UpdateShip(Humanoid.SeatPart)

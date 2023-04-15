@@ -6,7 +6,8 @@ local Network = {
 function Network:Receive(args)
     local name = args[1]
     if name == "shoot" or name == "bomb" then
-        self.Info["shooting"] = args[1]
+        print("shooting is now"..args[2])
+        self.Info["shooting"] = args[2]
     end
 end
 
@@ -35,9 +36,7 @@ function Network:Init()
             return namecall(event, ...)
         end
         local args = {...}
-        if not args[3] then
-            self:Receive(args)
-        end
+        self:Receive(args)
         return namecall(event, ...)
     end
 end
