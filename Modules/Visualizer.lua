@@ -1,7 +1,13 @@
 local HttpService = game:GetService("HttpService")
+
 local Visualizer = {
 	Instances = {},
-    Parent = nil,
+    Parent = (function()
+        local Parent = Instance.new("Folder")
+        Parent.Name = HttpService:GenerateGUID()
+        Parent.Parent = workspace
+        return Parent
+    end),
     Defaults = {
         Beam = (function()
             local Beam = Instance.new("Beam")
@@ -23,11 +29,6 @@ local Visualizer = {
         end)()
     }
 }
-
-local Parent = Instance.new("Folder")
-Parent.Name = HttpService:GenerateGUID()
-Parent.Parent = workspace
-Visualizer.Parent = Parent
 
 function Visualizer:Destroy() 
     for i,Child in pairs(self.Instances) do
