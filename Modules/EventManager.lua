@@ -2,7 +2,6 @@ local HttpService = game:GetService("HttpService")
 
 
 local manager = {
-    functions = {},
     events = {}
 }
 

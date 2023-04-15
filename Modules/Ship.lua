@@ -37,27 +37,8 @@ function Ship:GetGunBarrel(gunIndex : number)
     end
 end
 
-function Ship:HookEvent()
-    local gmt = getrawmetatable(game)
-    setreadonly(gmt, false)
-    self.gmt = gmt
-    local namecall = gmt.__namecall
-    self.namecall = namecall
-    gmt.__namecall = function(self, ...)
-        local method = getnamecallmethod()
-        if self == Event and method == "FireServer" then
-            local args = { ... }
-            local eventType = args[1]
-            local eventArgs = args[2]
-    
-            if eventType == "ChangeGun" then
-                self.Status.CurrentGun = eventArgs[1]
-            elseif eventType == "bomb" and eventArgs then
-                self.Status.CurrentGun = eventArgs[1]
-            end
-        end
-        return namecall(self, ...)
-    end
+function Ship:CurrentGun()
+    return Ship.Ship.GunNum.Value
 end
 
 function Ship:Destroy()

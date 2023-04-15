@@ -24,6 +24,7 @@ local Calculations = GetModule("Calculations")
 local EventManager = GetModule("EventManager")
 local Visualizer = GetModule("Visualizer")
 local Ship = GetModule("Ship")
+-- local Network = GetModule("Network")
 
 local Event = ReplicatedStorage.Event
 local Players = game:GetService("Players")
@@ -60,16 +61,7 @@ local function Shoot(target: Vector3)
 end
 
 EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
-	if Player.Character then
-		local Humanoid = Player.Character:WaitForChild("Humanoid")
-		if Humanoid and Humanoid.SeatPart then
-			Ship = Humanoid.SeatPart.Parent
-		end
-	end
-end)
-
-EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
-	if Ship and Player.Character then
+	if Ship.Ship and Player.Character then
 		local Character = Player.Character
 		local Root = Character.HumanoidRootPart
 		local ClosestPlane = {
@@ -160,13 +152,8 @@ EventManager:AddEvent(Player.Chatted, function(message, recipient)
 		end
 	elseif message == "/e stop" then
 		Notification:SendNotification("Success", "Stopping the script", 5)
-		EventManager:Stop()
+		EventManager:Destroy()
 		Visualizer:Destroy()
-		for i, beam in pairs(Beams) do
-			beam:Destroy()
-		end
-
-		gmt.__namecall = namecall
 	end
 end)
 
@@ -181,7 +168,7 @@ for _, Beam in pairs({
 	Visualizer:CreateCircle(1700),
 	Visualizer:CreateCircle(1500),
 }) do
-	EventManager:AddEvent(RunService.RenderStepped:Connect(function()
+	EventManager:AddEvent(RunService.RenderStepped, function()
 		local Character = Player.Character
 		if not Character then
 			return
@@ -191,5 +178,5 @@ for _, Beam in pairs({
 			return
 		end
 		Beam.Position = Root.Position
-	end))
+	end)
 end
