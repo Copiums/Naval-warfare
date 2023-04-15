@@ -93,11 +93,8 @@ EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 		if Ship.Status.CurrentGun ~= 1 then
 			Network:Send("ChangeGun", 1)
 		end
-		if Network.Info.shooting then
-			return
-		else
-			Network:Send("bomb", true)
-		end
+		Network:Send("bomb", true)
+		Network:Send("bomb", false)
 	end
 end)
 
@@ -162,8 +159,8 @@ end)
 
 EventManager:AddEvent(Player.CharacterAdded, function(Character)
 	local Humanoid = Character:WaitForChild("Humanoid")
-	Humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function(SeatPart)
-		Ship:UpdateShip(SeatPart)
+	EventManager:AddEvent(Humanoid:GetPropertyChangedSignal("SeatPart"), function(SeatPart)
+		Ship:UpdateShip(Humanoid.SeatPart)
 	end)
 end)
 

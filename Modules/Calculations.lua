@@ -57,7 +57,12 @@ end
 function calculations.AntiAir:aproachVelocity(ourPosition: Vector3, targetPosition: Vector3, targetVelocity: Vector3)
 	
 	local distanceBefore = (ourPosition - targetPosition).Magnitude
-	local targetPositionAfterTravel = targetPosition + targetVelocity
+	local multiplyer = 1
+	if getgenv().Ping then
+		multiplyer += getgenv().Ping
+	end
+
+	local targetPositionAfterTravel = targetPosition + (targetVelocity * multiplyer)
 	local distanceAfter = (ourPosition - targetPositionAfterTravel).Magnitude
 
 	local aproachVelocity = distanceBefore - distanceAfter
