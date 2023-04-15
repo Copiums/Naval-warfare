@@ -27,18 +27,18 @@ function Network:Init()
     self.gmt = gmt
     local namecall = gmt.__namecall
     self.namecall = namecall
-    gmt.__namecall = function(event, ...)
-        if event ~= Event then
-            return namecall(event, ...)
-        end
-        local method = getnamecallmethod()
-        if tostring(method) ~= "FireServer" then
-            return namecall(event, ...)
-        end
-        local args = {...}
-        self:Receive(args)
-        return namecall(event, ...)
-    end
+    -- gmt.__namecall = function(event, ...)
+    --     if event ~= Event then
+    --         return namecall(event, ...)
+    --     end
+    --     local method = getnamecallmethod()
+    --     if tostring(method) ~= "FireServer" then
+    --         return namecall(event, ...)
+    --     end
+    --     local args = {...}
+    --     self:Receive(args)
+    --     return namecall(event, ...)
+    -- end
 end
 
 

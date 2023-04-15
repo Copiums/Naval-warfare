@@ -186,7 +186,13 @@ end
 
 local Character = Player.Character
 local Humanoid = Character:WaitForChild("Humanoid")
-Humanoid:GetPropertyChangedSignal("SeatPart"):Connect(function(SeatPart)
+EventManager:AddEvent(Humanoid:GetPropertyChangedSignal("SeatPart"), function()
+	local SeatPart = Humanoid.SeatPart
+	if SeatPart then
+		Notification:SendNotification("Success", "New Ship(" .. SeatPart.Parent.Name .. ")", 4)
+	else
+		Notification:SendNotification("Success", "Left ship", 4)
+	end
 	Ship:UpdateShip(SeatPart)
 end)
 
