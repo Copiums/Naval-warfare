@@ -157,6 +157,7 @@ EventManager:AddEvent(Player.Chatted, function(message, recipient)
 		EventManager:Destroy()
 		Visualizer:Destroy()
 		Network:Destroy()
+		Ui:Destroy()
 	end
 end)
 
@@ -197,3 +198,7 @@ EventManager:AddEvent(Humanoid:GetPropertyChangedSignal("SeatPart"), function()
 end)
 
 Ship:UpdateShip(Humanoid.SeatPart)
+
+EventManager:AddEvent(RunService.RenderStepped, function()
+	
+end)

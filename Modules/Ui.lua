@@ -126,6 +126,11 @@ function Ui:Init()
 	Ui.Buttons.Focus = FocusShip_1
 	Ui.Viewport = Map
 	Ui.Cursor = CurrentPosition
+	Ui.ScreenGui = ScreenGui
+end
+
+function Ui:Destroy()
+	Ui.ScreenGui:Destroy()
 end
 
 return Ui
