@@ -41,9 +41,4 @@ function Ship:CurrentGun()
     return Ship.Ship.GunNum.Value
 end
 
-function Ship:Destroy()
-    self.gmt.__namecall = self.namecall
-    return true
-end
-
 return Ship

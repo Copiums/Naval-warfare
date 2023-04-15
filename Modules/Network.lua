@@ -34,7 +34,10 @@ function Network:Init()
         if tostring(method) ~= "FireServer" then
             return namecall(event, ...)
         end
-        self:Receive({...})
+        local args = {...}
+        if not args[3] then
+            self:Receive(args)
+        end
         return namecall(event, ...)
     end
 end
