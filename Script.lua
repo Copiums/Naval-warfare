@@ -14,8 +14,10 @@ local function GetModule(Name: string)
 		return loadstring(game:HttpGet(url))()
 	end)
 	if not success then
+                print("ok")
 		Notification:SendNotification("Error", ("%s when trying to load %s"):format(response, Name), 4)
 	else
+                print("trash")
 		return response
 	end
 end
