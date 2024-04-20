@@ -6,6 +6,7 @@ local Ship = {
 
 local ShipNames = {
 	"Heavy Cruiser",
+	"BattleShip",
 	"Cruiser",
 	"Carrier",
 	"Destroyer",
