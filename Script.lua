@@ -140,19 +140,19 @@ EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
 end)
 
 EventManager:AddEvent(Player.Chatted, function(message, recipient)
-	if message == "/e b" then
+	if message == ";b" then
 		Shoot(GetIsland("B").MainBody.Position)
-	elseif message == "/e a" then
+	elseif message == ";a" then
 		Shoot(GetIsland("A").MainBody.Position)
-	elseif message == "/e c" then
+	elseif message == ";c" then
 		Shoot(GetIsland("C").MainBody.Position)
-	elseif message == "/e dock" then
+	elseif message == ";dock" then
 		if Player.Team.Name == "USA" then
 			Shoot(workspace.JapanDock.MainBody.Position)
 		else
 			Shoot(workspace.USDock.MainBody.Position)
 		end
-	elseif message == "/e stop" then
+	elseif message == ";stop" then
 		Notification:SendNotification("Success", "Stopping the script", 5)
 		for i,Module in pairs({EventManager, Visualizer, Network, Ui}) do
 			local succes, response = pcall(function()
