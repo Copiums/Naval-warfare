@@ -19,7 +19,7 @@ local function GetModule(Name: string)
 		return response
 	end
 end
-
+print("ok")
 local Calculations = GetModule("Calculations")
 local EventManager = GetModule("EventManager")
 local Visualizer = GetModule("Visualizer")
