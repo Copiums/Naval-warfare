@@ -193,19 +193,16 @@ EventManager:AddEvent(lplr.CharacterAdded, function(char)
 end)
 
 local char = lplr.Character
-if char then
-        local hum: Humanoid = char:WaitForChild("Humanoid")
-        EventManager:AddEvent(hum:GetPropertyChangedSignal("SeatPart"), function()
-                local seat = hum.SeatPart
-                if seat then
-                        Notification:SendNotification("Success", "New Ship(" .. seat.Parent.Name .. ")", 4)
-                else
-                        Notification:SendNotification("Success", "Left ship", 4)
-                end
-                Ship:UpdateShip(seat)
-        end)
-        Ship:UpdateShip(hum.SeatPart)
-end
+local hum: Humanoid = char:WaitForChild("Humanoid")
+EventManager:AddEvent(hum:GetPropertyChangedSignal("SeatPart"), function()
+    	local seat = hum.SeatPart
+        if seat then
+                Notification:SendNotification("Success", "New Ship(" .. seat.Parent.Name .. ")", 4)
+        else
+                Notification:SendNotification("Success", "Left ship", 4)
+        end
+        Ship:UpdateShip(seat)
+end)
 
 -- Visualizer Circle
 for _, beam in next, {Visualizer:CreateCircle(1700)} do
