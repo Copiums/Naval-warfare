@@ -1,212 +1,215 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
-local Stats = game:GetService("Stats")
+--[[
+    Naval Warfare Script - Fixed + Compact Style
+]]
 
-local Notification =
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
+local vape: any = shared.veloc
+local velo: table = {}
 
+local replicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local playersService: Players = cloneref(game:GetService("Players"))
+local runService: RunService = cloneref(game:GetService("RunService"))
+local stats: Stats = cloneref(game:GetService("Stats"))
+
+local lplr: Player = playersService.LocalPlayer
+
+local Notification: any = loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
 Notification:SendNotification("Info", "Executed", 3)
 
-local function GetModule(Name: string)
-	local repositary = "https://raw.githubusercontent.com/BFGKO/Naval-warfare/main/Modules/%s.lua"
-	local url = repositary:format(Name)
-	local success, response = pcall(function()
-		return loadstring(game:HttpGet(url))()
-	end)
-	if not success then
-		Notification:SendNotification("Error", ("%s when trying to load %s"):format(response, Name), 4)
-	else
-		return response
-	end
+local function GetModule(Name: string): any
+        local repo: string = "https://raw.githubusercontent.com/Copiums/Naval-warfare/main/Modules/%s.lua"
+        local url: string = repo:format(Name)
+        
+        local suc: boolean, resp: any = pcall(function()
+                return loadstring(game:HttpGet(url))()
+        end)
+        
+        if not suc then
+                Notification:SendNotification("Error", ("%s when trying to load %s"):format(resp, Name), 4)
+                return nil
+        end
+        return resp
 end
 
-local Calculations = GetModule("Calculations")
-local EventManager = GetModule("EventManager")
-local Visualizer = GetModule("Visualizer")
-local Ship = GetModule("Ship")
-local Network = GetModule("Network")
-Network:Init()
+local Calculations: any = GetModule("Calculations")
+local EventManager: any = GetModule("EventManager")
+local Visualizer: any = GetModule("Visualizer")
+local Ship: any = GetModule("Ship")
+local Network: any = GetModule("Network")
+local Ui: any = GetModule("Ui")
 
-local Ui = GetModule("Ui")
+Network:Init()
 Ui:Init()
 
-local Event = ReplicatedStorage.Event
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
+local Event: any = replicatedStorage.Event
+local Planes: table = {}
 
-local Planes = {}
-
-local function GetIsland(Letter)
-	for i, Island in pairs(workspace:GetChildren()) do
-		if Island.Name == "Island" and Island.IslandCode.Value == Letter then
-			return Island
-		end
-	end
+local GetIsland: (letter: string) -> any = function(letter: string)
+        for _, island in next, workspace:GetChildren() do
+                if island.Name == "Island" and island:FindFirstChild("IslandCode") and island.IslandCode.Value == letter then
+                        return island
+                end
+        end
+        return nil
 end
 
-local function Shoot(target: Vector3)
-	if Ship.Ship.GunNum.Value ~= 0 then
-		Event:FireServer("ChangeGun", { 0 })
-	end
-	local barrel = Ship:GetGunBarrel(0)
-	local distance = (barrel.Position - target).Magnitude
+local Shoot: (target: Vector3) -> () = function(target: Vector3)
+        if not Ship.Ship then
+                Notification:SendNotification("Error", "No ship detected!", 4)
+                return
+        end
 
-	local angle = Calculations.Artillery:angle(distance, 800)
-	local highestPoint = Calculations.Artillery:highestPoint(angle, 800)
+        if Ship:GetCurrentGun() ~= 0 then
+                Event:FireServer("ChangeGun", {0})
+                task.wait(0.2)
+        end
 
-	local middlePoint = (barrel.Position + target) / 2 + Vector3.yAxis * highestPoint
+        local barrel: any = Ship:GetGunBarrel(0)
+        if not barrel then
+                Notification:SendNotification("Error", "Could not find gun barrel!", 4)
+                return
+        end
 
-	Network:Send("aim", middlePoint)
+        local dist: number = (barrel.Position - target).Magnitude
+        local angle: number = Calculations.Artillery:angle(dist, 800)
+        local highest: number = Calculations.Artillery:highestPoint(angle, 800)
 
-	Network:Send("bomb", true)
-	Network:Send("bomb", false)
+        local aimPos: Vector3 = (barrel.Position + target) / 2 + Vector3.yAxis * highest
+
+        Network:Send("aim", aimPos)
+        Network:Send("bomb", true)
+        task.wait(0.1)
+        Network:Send("bomb", false)
+
+        Notification:SendNotification("Success", "Artillery Fired | Dist: " .. math.floor(dist), 3)
 end
 
-EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
-	if Ship.Ship then
-		local Character = Player.Character
-		local Root = Character.HumanoidRootPart
-		local ClosestPlane = {
-			Distance = math.huge,
-		}
-		for i, Plane in pairs(Planes) do
-			if not Plane:FindFirstChild("MainBody") or not Plane:FindFirstChild("HP") then
-				continue
-			end
-			local Distance = (Root.Position - Plane.MainBody.Position).Magnitude
-			if Distance < ClosestPlane["Distance"] and Plane.HP.Value > 0 then
-				ClosestPlane["Distance"] = Distance
-				ClosestPlane["Plane"] = Plane
-			end
-		end
+-- Anti Air
+EventManager:AddEvent(runService.RenderStepped, function()
+        if not Ship.Ship then return end
+        local char = lplr.Character
+        if not char then return end
+        local hrp: BasePart? = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
 
-		if not ClosestPlane.Plane then
-			if Network.Info.shooting then
-				Network:Send("bomb", false)
-			end
-			return
-		end
+        local closest: table = {Dist = math.huge}
 
-		local Plane = ClosestPlane.Plane
+        for _, plane in next, Planes do
+                if not plane:FindFirstChild("MainBody") or not plane:FindFirstChild("HP") then continue end
+                local dist: number = (hrp.Position - plane.MainBody.Position).Magnitude
+                if dist < closest.Dist and plane.HP.Value > 0 then
+                        closest.Dist = dist
+                        closest.Plane = plane
+                end
+        end
 
-		local shootAt = Calculations.AntiAir:shootAt(Root, Plane.MainBody)
+        if not closest.Plane then
+                if Network.Info.shooting then Network:Send("bomb", false) end
+                return
+        end
 
-		Network:Send("aim", shootAt)
+        local plane = closest.Plane
+        local aimAt: Vector3 = Calculations.AntiAir:shootAt(hrp, plane.MainBody)
 
-		if Ship.Status.CurrentGun ~= 1 then
-			Network:Send("ChangeGun", 1)
-		end
-		Network:Send("bomb", true)
-		Network:Send("bomb", false)
-	end
+        Network:Send("aim", aimAt)
+        if Ship.Status.CurrentGun ~= 1 then
+                Network:Send("ChangeGun", 1)
+        end
+        Network:Send("bomb", true)
+        task.wait(0.05)
+        Network:Send("bomb", false)
 end)
 
-EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
-	local Character = Player.Character
-	if not Character or not Ship then
-		return
-	end
-	local Root = Character.HumanoidRootPart
-	for i, Plane in pairs(workspace:GetChildren()) do
-		if not Plane:IsA("Model") then
-			continue
-		end
-		local isPlane = string.match(Plane.Name, "Bomber")
-		if not isPlane then
-			continue
-		end
-		if not Plane:FindFirstChild("Team") then
-			continue
-		end
+-- Plane Detector
+EventManager:AddEvent(runService.RenderStepped, function()
+        local char = lplr.Character
+        if not char then return end
+        local hrp: BasePart? = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
 
-		local isFriendly = Plane.Team.Value == Player.Team.Name
-		local isSpoted = Planes[Plane]
-		if isFriendly then
-			continue
-		end
-		local Distance = (Root.Position - Plane.PrimaryPart.Position).Magnitude
-		local inRange = Distance < 1500
-		if not inRange then
-			Planes[Plane] = nil
-		elseif not isSpoted then
-			Notification:SendNotification("Warning", Plane.Name .. " has entered airspace", 4)
-			Planes[Plane] = Plane
-		end
-	end
+        for _, plane in next, workspace:GetChildren() do
+                if not plane:IsA("Model") then continue end
+                if not string.match(plane.Name, "Bomber") then continue end
+                if not plane:FindFirstChild("Team") then continue end
+
+                local friendly: boolean = plane.Team.Value == lplr.Team.Name
+                if friendly then continue end
+
+                local dist: number = (hrp.Position - plane.PrimaryPart.Position).Magnitude
+                local inrange: boolean = dist < 1500
+
+                if not inrange then
+                        Planes[plane] = nil
+                elseif not Planes[plane] then
+                        Notification:SendNotification("Warning", plane.Name .. " has entered airspace", 4)
+                        Planes[plane] = plane
+                end
+        end
 end)
 
-EventManager:AddEvent(RunService.RenderStepped, function(deltaTime)
-	getgenv().Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
+-- Ping
+EventManager:AddEvent(runService.RenderStepped, function()
+        getgenv().Ping = stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
 end)
 
-EventManager:AddEvent(Player.Chatted, function(message, recipient)
-	if message == ";b" then
-		Shoot(GetIsland("B").MainBody.Position)
-	elseif message == ";a" then
-		Shoot(GetIsland("A").MainBody.Position)
-	elseif message == ";c" then
-		Shoot(GetIsland("C").MainBody.Position)
-	elseif message == ";dock" then
-		if Player.Team.Name == "USA" then
-			Shoot(workspace.JapanDock.MainBody.Position)
-		else
-			Shoot(workspace.USDock.MainBody.Position)
-		end
-	elseif message == ";stop" then
-		Notification:SendNotification("Success", "Stopping the script", 5)
-		for i,Module in pairs({EventManager, Visualizer, Network, Ui}) do
-			local succes, response = pcall(function()
-				return Module:Destroy()
-			end)
-			if not succes then
-				Notification:SendNotification("Error", response.." when trying to unload", 5)
-			end
-		end
-		EventManager:Destroy()
-		Visualizer:Destroy()
-		Network:Destroy()
-		Ui:Destroy()
-	end
+-- Chat Commands
+EventManager:AddEvent(lplr.Chatted, function(msg: string)
+        msg = msg:lower()
+
+        if msg == ";b" then
+                local island = GetIsland("B")
+                if island and island:FindFirstChild("MainBody") then Shoot(island.MainBody.Position) end
+        elseif msg == ";a" then
+                local island = GetIsland("A")
+                if island and island:FindFirstChild("MainBody") then Shoot(island.MainBody.Position) end
+        elseif msg == ";c" then
+                local island = GetIsland("C")
+                if island and island:FindFirstChild("MainBody") then Shoot(island.MainBody.Position) end
+        elseif msg == ";dock" then
+                if lplr.Team.Name == "USA" then
+                        Shoot(workspace.JapanDock and workspace.JapanDock.MainBody.Position or Vector3.zero)
+                else
+                        Shoot(workspace.USDock and workspace.USDock.MainBody.Position or Vector3.zero)
+                end
+        elseif msg == ";stop" then
+                Notification:SendNotification("Success", "Stopping the script", 5)
+                for _, mod in next, {EventManager, Visualizer, Network, Ui} do
+                        pcall(function() mod:Destroy() end)
+                end
+        end
 end)
 
-EventManager:AddEvent(Player.CharacterAdded, function(Character)
-	local Humanoid = Character:WaitForChild("Humanoid")
-	EventManager:AddEvent(Humanoid:GetPropertyChangedSignal("SeatPart"), function(SeatPart)
-		Ship:UpdateShip(Humanoid.SeatPart)
-	end)
+-- Seat Handler
+EventManager:AddEvent(lplr.CharacterAdded, function(char)
+        local hum: Humanoid = char:WaitForChild("Humanoid")
+        EventManager:AddEvent(hum:GetPropertyChangedSignal("SeatPart"), function()
+                Ship:UpdateShip(hum.SeatPart)
+        end)
 end)
 
-for _, Beam in pairs({
-	Visualizer:CreateCircle(1700),
-	-- Visualizer:CreateCircle(1500),
-}) do
-	EventManager:AddEvent(RunService.RenderStepped, function()
-		local Character = Player.Character
-		if not Character then
-			return
-		end
-		local Root = Character:FindFirstChild("HumanoidRootPart")
-		if not Root then
-			return
-		end
-		Beam.Position = Root.Position
-	end)
+local char = lplr.Character
+if char then
+        local hum: Humanoid = char:WaitForChild("Humanoid")
+        EventManager:AddEvent(hum:GetPropertyChangedSignal("SeatPart"), function()
+                local seat = hum.SeatPart
+                if seat then
+                        Notification:SendNotification("Success", "New Ship(" .. seat.Parent.Name .. ")", 4)
+                else
+                        Notification:SendNotification("Success", "Left ship", 4)
+                end
+                Ship:UpdateShip(seat)
+        end)
+        Ship:UpdateShip(hum.SeatPart)
 end
 
-local Character = Player.Character
-local Humanoid = Character:WaitForChild("Humanoid")
-EventManager:AddEvent(Humanoid:GetPropertyChangedSignal("SeatPart"), function()
-	local SeatPart = Humanoid.SeatPart
-	if SeatPart then
-		Notification:SendNotification("Success", "New Ship(" .. SeatPart.Parent.Name .. ")", 4)
-	else
-		Notification:SendNotification("Success", "Left ship", 4)
-	end
-	Ship:UpdateShip(SeatPart)
-end)
+-- Visualizer Circle
+for _, beam in next, {Visualizer:CreateCircle(1700)} do
+        EventManager:AddEvent(runService.RenderStepped, function()
+                local char = lplr.Character
+                local hrp: BasePart? = char and char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                        beam.Position = hrp.Position
+                end
+        end)
+end
 
-Ship:UpdateShip(Humanoid.SeatPart)
-
-EventManager:AddEvent(RunService.RenderStepped, function()
-	
-end)
+Notification:SendNotification("Success", "Naval Warfare Script Loaded", 5)
