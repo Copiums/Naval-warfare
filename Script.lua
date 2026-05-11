@@ -4,19 +4,13 @@
 
 local vape: any = shared.veloc
 local velo: table = {}
-local cloneref: (obj: any) -> any = cloneref or function(obj)
-    	return obj;
-end;
-local replicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"));
-local playersService: Players = cloneref(game:GetService("Players"));
-local runService: RunService = cloneref(game:GetService("RunService"));
-local stats: Stats = cloneref(game:GetService("Stats"));
 
-local isnetworkowner: (part: Instance?) -> boolean = identifyexecutor and table.find({'AWP', 'Nihon'}, ({identifyexecutor()})[1]) and isnetworkowner or function()
-		return true;
-end;
+local replicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local playersService: Players = cloneref(game:GetService("Players"))
+local runService: RunService = cloneref(game:GetService("RunService"))
+local stats: Stats = cloneref(game:GetService("Stats"))
 
-local lplr: Player = playersService.LocalPlayer;
+local lplr: Player = playersService.LocalPlayer
 
 local Notification: any = loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
 Notification:SendNotification("Info", "Executed", 3)
@@ -24,7 +18,7 @@ Notification:SendNotification("Info", "Executed", 3)
 local function GetModule(Name: string): any
         local repo: string = "https://raw.githubusercontent.com/Copiums/Naval-warfare/main/Modules/%s.lua"
         local url: string = repo:format(Name)
-        
+        print(url)
         local suc: boolean, resp: any = pcall(function()
                 return loadstring(game:HttpGet(url))()
         end)
@@ -59,12 +53,25 @@ local GetIsland: (letter: string) -> any = function(letter: string)
 end
 
 local Shoot: (target: Vector3) -> () = function(target: Vector3)
-        if not Ship.Ship then
+        print("=== SHOOT DEBUG ===")
+        print("Ship.Ship:", Ship.Ship)
+        print("CurrentGun:", Ship:CurrentGun())
+        
+        local barrel = Ship:GetGunBarrel(0)
+        print("Barrel:", barrel)
+        if barrel then
+                print("Barrel Name:", barrel.Name)
+                print("Barrel Position:", barrel.Position)
+        end
+        
+        print("Target:", target)
+        print("===================")
+		if not Ship.Ship then
                 Notification:SendNotification("Error", "No ship detected!", 4)
                 return
         end
 
-        if Ship:GetCurrentGun() ~= 0 then
+		if Ship:CurrentGun() ~= 0 then
                 Event:FireServer("ChangeGun", {0})
                 task.wait(0.2)
         end
@@ -125,6 +132,65 @@ EventManager:AddEvent(runService.RenderStepped, function()
         Network:Send("bomb", false)
 end)
 
+
+-- Ship Artillery
+-- Ship Artillery
+local canFire: boolean = true
+
+EventManager:AddEvent(runService.RenderStepped, function()
+        if not Ship.Ship then return end
+        if not canFire then return end
+        local char = lplr.Character
+        if not char then return end
+        local hrp: BasePart? = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local closest: table = {Dist = math.huge}
+
+        for _, obj in next, workspace:GetChildren() do
+                if not obj:IsA("Model") then continue end
+                if not table.find(Ship.ShipNames, obj.Name) then continue end
+                if not obj:FindFirstChild("Team") then continue end
+                if obj.Team.Value == lplr.Team.Name then continue end
+                if not obj.PrimaryPart then continue end
+
+                local dist: number = (hrp.Position - obj.PrimaryPart.Position).Magnitude
+                if dist < closest.Dist then
+                        closest.Dist = dist
+                        closest.Ship = obj
+                end
+        end
+
+        if not closest.Ship then return end
+
+        local barrel: any = Ship:GetGunBarrel(0)
+        if not barrel then return end
+
+        local target: BasePart = closest.Ship.PrimaryPart
+        local targetVelocity: Vector3 = target.AssemblyLinearVelocity
+        local dist: number = (barrel.Position - target.Position).Magnitude
+        local angle: number = Calculations.Artillery:angle(dist, 800)
+        local flightTime: number = Calculations.Artillery:flightTime(angle, 800)
+        local leadPos: Vector3 = target.Position + (targetVelocity * flightTime)
+        local highest: number = Calculations.Artillery:highestPoint(angle, 800)
+        local aimPos: Vector3 = (barrel.Position + leadPos) / 2 + Vector3.yAxis * highest
+
+        if Ship.Status.CurrentGun ~= 0 then
+                Network:Send("ChangeGun", 0)
+        end
+
+        Network:Send("aim", aimPos)
+
+        canFire = false
+        Network:Send("bomb", true)
+        task.wait(0.1)
+        Network:Send("bomb", false)
+
+        -- wait for reload before firing again
+        task.wait(Ship.Ship:FindFirstChild("ReloadTime") and Ship.Ship.ReloadTime.Value or 5)
+        canFire = true
+end)
+
 -- Plane Detector
 EventManager:AddEvent(runService.RenderStepped, function()
         local char = lplr.Character
@@ -157,10 +223,8 @@ EventManager:AddEvent(runService.RenderStepped, function()
         getgenv().Ping = stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
 end)
 
--- Chat Commands
 EventManager:AddEvent(lplr.Chatted, function(msg: string)
         msg = msg:lower()
-
         if msg == ";b" then
                 local island = GetIsland("B")
                 if island and island:FindFirstChild("MainBody") then Shoot(island.MainBody.Position) end
@@ -193,16 +257,19 @@ EventManager:AddEvent(lplr.CharacterAdded, function(char)
 end)
 
 local char = lplr.Character
-local hum: Humanoid = char:WaitForChild("Humanoid")
-EventManager:AddEvent(hum:GetPropertyChangedSignal("SeatPart"), function()
-    	local seat = hum.SeatPart
-        if seat then
-                Notification:SendNotification("Success", "New Ship(" .. seat.Parent.Name .. ")", 4)
-        else
-                Notification:SendNotification("Success", "Left ship", 4)
-        end
-        Ship:UpdateShip(seat)
-end)
+if char then
+        local hum: Humanoid = char:WaitForChild("Humanoid")
+        EventManager:AddEvent(hum:GetPropertyChangedSignal("SeatPart"), function()
+                local seat = hum.SeatPart
+                if seat then
+                        Notification:SendNotification("Success", "New Ship(" .. seat.Parent.Name .. ")", 4)
+                else
+                        Notification:SendNotification("Success", "Left ship", 4)
+                end
+                Ship:UpdateShip(seat)
+        end)
+        Ship:UpdateShip(hum.SeatPart)
+end
 
 -- Visualizer Circle
 for _, beam in next, {Visualizer:CreateCircle(1700)} do
