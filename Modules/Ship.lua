@@ -1,6 +1,6 @@
 local Ship = {
         Status = {CurrentGun = -5},
-        --Ship = nil
+        Ship = nil
 }
 
 local shipNames: table = {
@@ -9,15 +9,15 @@ local shipNames: table = {
 
 function Ship:UpdateShip(seatPart : BasePart)
         if not seatPart then
-                self.Ship = nil
-                return
-        end
-
-        local model = seatPart.Parent
+                self.Ship = nil;
+                return;
+        end;
+        local model = seatPart.Parent;
+        if not model then return; end;
         if table.find(shipNames, model.Name) then
-                self.Ship = model
-        end
-end
+                self.Ship = model;
+        end;
+end;
 
 function Ship:GetGunBarrel(gunIndex : number)
         if not Ship.Ship then return nil end
@@ -55,6 +55,9 @@ function Ship:GetGunBarrel(gunIndex : number)
 end;
 
 function Ship:CurrentGun()
+        if not Ship.Ship then 
+                return nil; 
+        end;
         return Ship.Ship.GunNum.Value;
 end;
 
