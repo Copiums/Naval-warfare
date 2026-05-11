@@ -4,13 +4,19 @@
 
 local vape: any = shared.veloc
 local velo: table = {}
+local cloneref: (obj: any) -> any = cloneref or function(obj)
+    	return obj;
+end;
+local replicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"));
+local playersService: Players = cloneref(game:GetService("Players"));
+local runService: RunService = cloneref(game:GetService("RunService"));
+local stats: Stats = cloneref(game:GetService("Stats"));
 
-local replicatedStorage: ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
-local playersService: Players = cloneref(game:GetService("Players"))
-local runService: RunService = cloneref(game:GetService("RunService"))
-local stats: Stats = cloneref(game:GetService("Stats"))
+local isnetworkowner: (part: Instance?) -> boolean = identifyexecutor and table.find({'AWP', 'Nihon'}, ({identifyexecutor()})[1]) and isnetworkowner or function()
+		return true;
+end;
 
-local lplr: Player = playersService.LocalPlayer
+local lplr: Player = playersService.LocalPlayer;
 
 local Notification: any = loadstring(game:HttpGet("https://raw.githubusercontent.com/lobox920/Notification-Library/Main/Library.lua"))()
 Notification:SendNotification("Info", "Executed", 3)
