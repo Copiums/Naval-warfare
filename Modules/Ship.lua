@@ -20,30 +20,23 @@ function Ship:UpdateShip(seatPart : BasePart)
 end;
 
 function Ship:GetGunBarrel(gunIndex : number)
-        if not Ship.Ship then return nil end
+        if not Ship.Ship then print("GetGunBarrel: Ship.Ship is nil") return nil end
 
-        -- Main Artillery (Gun 0)
         if gunIndex == 0 then
-                -- Direct PrimeGun
-                local primeGun: any = self.Ship:FindFirstChild("PrimeGun", true)
-                if primeGun then return primeGun end
+                local primeGun = self.Ship:FindFirstChild("PrimeGun", true)
+                print("PrimeGun direct:", primeGun)
 
-                -- Inside Turrets
                 for _, turret in next, self.Ship:GetDescendants() do
                         if turret.Name == "Turret" and turret:IsA("Model") then
+                                print("Found turret:", turret:GetFullName())
                                 local pg = turret:FindFirstChild("PrimeGun")
-                                if pg then return pg end
                                 local bright = turret:FindFirstChild("BRight")
-                                if bright then return bright end
+                                print("  PrimeGun:", pg, "BRight:", bright)
                         end
                 end
 
-                -- Inside Body
                 local body = self.Ship:FindFirstChild("Body")
-                if body then
-                        local pg = body:FindFirstChild("PrimeGun", true)
-                        if pg then return pg end
-                end
+                print("Body:", body)
         end
 
         -- Anti-Air (Gun 1)
