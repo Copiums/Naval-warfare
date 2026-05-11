@@ -1,5 +1,5 @@
 --[[
-    Naval Warfare Script - Fixed + Compact Style
+    Naval Warfare Script
 ]]
 
 local vape: any = shared.veloc
