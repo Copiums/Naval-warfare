@@ -22,7 +22,7 @@ local function GetModule(Name: string): any
         local suc: boolean, resp: any = pcall(function()
                 return loadstring(game:HttpGet(url))()
         end)
-        
+
         if not suc then
                 Notification:SendNotification("Error", ("%s when trying to load %s"):format(resp, Name), 4)
                 return nil
@@ -56,23 +56,24 @@ local Shoot: (target: Vector3) -> () = function(target: Vector3)
         print("=== SHOOT DEBUG ===")
         print("Ship.Ship:", Ship.Ship)
         print("CurrentGun:", Ship:CurrentGun())
-        
+
         local barrel = Ship:GetGunBarrel(0)
         print("Barrel:", barrel)
         if barrel then
                 print("Barrel Name:", barrel.Name)
                 print("Barrel Position:", barrel.Position)
         end
-        
+
         print("Target:", target)
         print("===================")
-		if not Ship.Ship then
+
+        if not Ship.Ship then
                 Notification:SendNotification("Error", "No ship detected!", 4)
                 return
         end
 
-		if Ship:CurrentGun() ~= 0 then
-                Event:FireServer("ChangeGun", {0})
+        if Ship:CurrentGun() ~= 0 then
+                Network:Send("ChangeGun", 0)
                 task.wait(0.2)
         end
 
@@ -85,7 +86,6 @@ local Shoot: (target: Vector3) -> () = function(target: Vector3)
         local dist: number = (barrel.Position - target).Magnitude
         local angle: number = Calculations.Artillery:angle(dist, 800)
         local highest: number = Calculations.Artillery:highestPoint(angle, 800)
-
         local aimPos: Vector3 = (barrel.Position + target) / 2 + Vector3.yAxis * highest
 
         Network:Send("aim", aimPos)
@@ -96,45 +96,7 @@ local Shoot: (target: Vector3) -> () = function(target: Vector3)
         Notification:SendNotification("Success", "Artillery Fired | Dist: " .. math.floor(dist), 3)
 end
 
--- Anti Air
-EventManager:AddEvent(runService.RenderStepped, function()
-        if not Ship.Ship then return end
-        local char = lplr.Character
-        if not char then return end
-        local hrp: BasePart? = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
-
-        local closest: table = {Dist = math.huge}
-
-        for _, plane in next, Planes do
-                if not plane:FindFirstChild("MainBody") or not plane:FindFirstChild("HP") then continue end
-                local dist: number = (hrp.Position - plane.MainBody.Position).Magnitude
-                if dist < closest.Dist and plane.HP.Value > 0 then
-                        closest.Dist = dist
-                        closest.Plane = plane
-                end
-        end
-
-        if not closest.Plane then
-                if Network.Info.shooting then Network:Send("bomb", false) end
-                return
-        end
-
-        local plane = closest.Plane
-        local aimAt: Vector3 = Calculations.AntiAir:shootAt(hrp, plane.MainBody)
-
-        Network:Send("aim", aimAt)
-        if Ship.Status.CurrentGun ~= 1 then
-                Network:Send("ChangeGun", 1)
-        end
-        Network:Send("bomb", true)
-        task.wait(0.05)
-        Network:Send("bomb", false)
-end)
-
-
--- Ship Artillery
--- Ship Artillery
+-- Combined targeting loop (planes and ships, closest takes priority)
 local canFire: boolean = true
 
 EventManager:AddEvent(runService.RenderStepped, function()
@@ -145,49 +107,81 @@ EventManager:AddEvent(runService.RenderStepped, function()
         local hrp: BasePart? = char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
 
-        local closest: table = {Dist = math.huge}
+        local closestDist: number = math.huge
+        local closestTarget: BasePart = nil
+        local targetType: string = nil -- "ship" or "plane"
 
+        -- check planes
+        for _, plane in next, Planes do
+                if not plane:FindFirstChild("MainBody") or not plane:FindFirstChild("HP") then continue end
+                if plane.HP.Value <= 0 then continue end
+                local dist: number = (hrp.Position - plane.MainBody.Position).Magnitude
+                if dist < closestDist then
+                        closestDist = dist
+                        closestTarget = plane.MainBody
+                        targetType = "plane"
+                end
+        end
+
+        -- check enemy ships
         for _, obj in next, workspace:GetChildren() do
                 if not obj:IsA("Model") then continue end
                 if not table.find(Ship.ShipNames, obj.Name) then continue end
                 if not obj:FindFirstChild("Team") then continue end
                 if obj.Team.Value == lplr.Team.Name then continue end
                 if not obj.PrimaryPart then continue end
-
                 local dist: number = (hrp.Position - obj.PrimaryPart.Position).Magnitude
-                if dist < closest.Dist then
-                        closest.Dist = dist
-                        closest.Ship = obj
+                if dist < closestDist then
+                        closestDist = dist
+                        closestTarget = obj.PrimaryPart
+                        targetType = "ship"
                 end
         end
 
-        if not closest.Ship then return end
+        if not closestTarget then
+                if Network.Info.shooting then Network:Send("bomb", false) end
+                return
+        end
 
-        local barrel: any = Ship:GetGunBarrel(0)
+        local gunIndex: number = targetType == "plane" and 1 or 0
+        local barrel: any = Ship:GetGunBarrel(gunIndex)
         if not barrel then return end
 
-        local target: BasePart = closest.Ship.PrimaryPart
-        local targetVelocity: Vector3 = target.AssemblyLinearVelocity
-        local dist: number = (barrel.Position - target.Position).Magnitude
-        local angle: number = Calculations.Artillery:angle(dist, 800)
-        local flightTime: number = Calculations.Artillery:flightTime(angle, 800)
-        local leadPos: Vector3 = target.Position + (targetVelocity * flightTime)
-        local highest: number = Calculations.Artillery:highestPoint(angle, 800)
-        local aimPos: Vector3 = (barrel.Position + leadPos) / 2 + Vector3.yAxis * highest
+        local aimPos: Vector3
 
-        if Ship.Status.CurrentGun ~= 0 then
-                Network:Send("ChangeGun", 0)
+        if targetType == "plane" then
+                aimPos = Calculations.AntiAir:shootAt(hrp, closestTarget)
+        else
+                local targetVelocity: Vector3 = closestTarget.AssemblyLinearVelocity
+                local dist: number = (barrel.Position - closestTarget.Position).Magnitude
+                local angle: number = Calculations.Artillery:angle(dist, 800)
+                local flightTime: number = Calculations.Artillery:flightTime(angle, 800)
+                local leadPos: Vector3 = closestTarget.Position + (targetVelocity * flightTime)
+                local highest: number = Calculations.Artillery:highestPoint(angle, 800)
+                aimPos = (barrel.Position + leadPos) / 2 + Vector3.yAxis * highest
+        end
+
+        if Ship:CurrentGun() ~= gunIndex then
+                Network:Send("ChangeGun", gunIndex)
+                task.wait(0.2)
         end
 
         Network:Send("aim", aimPos)
 
         canFire = false
         Network:Send("bomb", true)
-        task.wait(0.1)
-        Network:Send("bomb", false)
 
-        -- wait for reload before firing again
-        task.wait(Ship.Ship:FindFirstChild("ReloadTime") and Ship.Ship.ReloadTime.Value or 5)
+        if targetType == "plane" then
+                task.wait(0.05)
+                Network:Send("bomb", false)
+                task.wait(0.05)
+        else
+                task.wait(0.1)
+                Network:Send("bomb", false)
+                local reloadTime: number = Ship.Ship:FindFirstChild("ReloadTime") and Ship.Ship.ReloadTime.Value or 5
+                task.wait(reloadTime)
+        end
+
         canFire = true
 end)
 
@@ -223,8 +217,10 @@ EventManager:AddEvent(runService.RenderStepped, function()
         getgenv().Ping = stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
 end)
 
+-- Chat Commands
 EventManager:AddEvent(lplr.Chatted, function(msg: string)
         msg = msg:lower()
+
         if msg == ";b" then
                 local island = GetIsland("B")
                 if island and island:FindFirstChild("MainBody") then Shoot(island.MainBody.Position) end
